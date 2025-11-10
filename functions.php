@@ -271,7 +271,6 @@ if ( ! function_exists( 'hello_elementor_body_open' ) ) {
 /**
  * Custom post type for events
  */
-
 function create_event_post_type() {
 	register_post_type('ir_event_post',
 		array(
@@ -289,6 +288,9 @@ function create_event_post_type() {
 }
 add_action( 'init', 'create_event_post_type' );
 
+/**
+ * Event Date Meta Box
+ */
 function ir_event_date_box() {
     add_meta_box(
         'ir_event_date', 
@@ -309,7 +311,7 @@ function ir_event_date_callback( $post ) {
     $my_meta_value = get_post_meta( $post->ID, '_ir_event_date_field', true );
 
     // Output the field
-    echo '<label for="my_custom_field">Event Date: </label>';
+    echo '<label for="ir_event_date_field">Event Date: </label>';
     echo '<input type="date" id="ir_event_date_field" name="ir_event_date_field" value="' . esc_attr( $my_meta_value ) . '" size="25" />';
 }
 
@@ -334,6 +336,154 @@ function save_ir_event_date_field_data( $post_id ) {
     }
 }
 add_action( 'save_post', 'save_ir_event_date_field_data' );
+
+/**
+ * Event City Meta Box
+ */
+function ir_event_city_box() {
+    add_meta_box(
+        'ir_event_city', 
+        'Event City',
+        'ir_event_city_callback',
+        'ir_event_post',
+        'normal',
+        'high'
+    );
+}
+add_action( 'add_meta_boxes', 'ir_event_city_box' );
+
+function ir_event_city_callback( $post ) {
+    // Add a nonce field for security
+    wp_nonce_field( basename( __FILE__ ), 'ir_event_city_nonce' );
+
+    // Retrieve existing meta value (if any)
+    $my_meta_value = get_post_meta( $post->ID, '_ir_event_city_field', true );
+
+    // Output the field
+    echo '<label for="ir_event_city_field">Event City: </label>';
+    echo '<input type="text" id="ir_event_city_field" name="ir_event_city_field" value="' . esc_attr( $my_meta_value ) . '" size="25" />';
+}
+
+function save_ir_event_city_field_data( $post_id ) {
+    // Verify nonce for security
+    if ( ! isset( $_POST['ir_event_city_nonce'] ) || ! wp_verify_nonce( $_POST['ir_event_city_nonce'], basename( __FILE__ ) ) ) {
+        return;
+    }
+    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+        return;
+    }
+    if ( wp_is_post_revision( $post_id ) ) {
+        return;
+    }
+    if ( ! current_user_can( 'edit_post', $post_id ) ) {
+        return;
+    }
+    if ( isset( $_POST['ir_event_city_field'] ) ) {
+        update_post_meta( $post_id, '_ir_event_city_field', sanitize_text_field( $_POST['ir_event_city_field'] ) );
+    } else {
+        delete_post_meta( $post_id, '_ir_event_city_field' );
+    }
+}
+add_action( 'save_post', 'save_ir_event_city_field_data' );
+
+/**
+ * Event Venue Meta Box
+ */
+function ir_event_venue_box() {
+    add_meta_box(
+        'ir_event_venue', 
+        'Event Venue',
+        'ir_event_venue_callback',
+        'ir_event_post',
+        'normal',
+        'high'
+    );
+}
+add_action( 'add_meta_boxes', 'ir_event_venue_box' );
+
+function ir_event_venue_callback( $post ) {
+    // Add a nonce field for security
+    wp_nonce_field( basename( __FILE__ ), 'ir_event_venue_nonce' );
+
+    // Retrieve existing meta value (if any)
+    $my_meta_value = get_post_meta( $post->ID, '_ir_event_venue_field', true );
+
+    // Output the field
+    echo '<label for="ir_event_venue_field">Event Venue: </label>';
+    echo '<input type="text" id="ir_event_venue_field" name="ir_event_venue_field" value="' . esc_attr( $my_meta_value ) . '" size="25" />';
+}
+
+function save_ir_event_venue_field_data( $post_id ) {
+    // Verify nonce for security
+    if ( ! isset( $_POST['ir_event_venue_nonce'] ) || ! wp_verify_nonce( $_POST['ir_event_venue_nonce'], basename( __FILE__ ) ) ) {
+        return;
+    }
+    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+        return;
+    }
+    if ( wp_is_post_revision( $post_id ) ) {
+        return;
+    }
+    if ( ! current_user_can( 'edit_post', $post_id ) ) {
+        return;
+    }
+    if ( isset( $_POST['ir_event_venue_field'] ) ) {
+        update_post_meta( $post_id, '_ir_event_venue_field', sanitize_text_field( $_POST['ir_event_venue_field'] ) );
+    } else {
+        delete_post_meta( $post_id, '_ir_event_venue_field' );
+    }
+}
+add_action( 'save_post', 'save_ir_event_venue_field_data' );
+
+
+/**
+ * Event Ticket Link Meta Box
+ */
+function ir_event_ticket_box() {
+    add_meta_box(
+        'ir_event_ticket', 
+        'Event Ticket',
+        'ir_event_ticket_callback',
+        'ir_event_post',
+        'normal',
+        'high'
+    );
+}
+add_action( 'add_meta_boxes', 'ir_event_ticket_box' );
+
+function ir_event_ticket_callback( $post ) {
+    // Add a nonce field for security
+    wp_nonce_field( basename( __FILE__ ), 'ir_event_ticket_nonce' );
+
+    // Retrieve existing meta value (if any)
+    $my_meta_value = get_post_meta( $post->ID, '_ir_event_ticket_field', true );
+
+    // Output the field
+    echo '<label for="ir_event_ticket_field">Event Ticket: </label>';
+    echo '<input type="url" id="ir_event_ticket_field" name="ir_event_ticket_field" value="' . esc_attr( $my_meta_value ) . '" size="25" />';
+}
+
+function save_ir_event_ticket_field_data( $post_id ) {
+    // Verify nonce for security
+    if ( ! isset( $_POST['ir_event_ticket_nonce'] ) || ! wp_verify_nonce( $_POST['ir_event_ticket_nonce'], basename( __FILE__ ) ) ) {
+        return;
+    }
+    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+        return;
+    }
+    if ( wp_is_post_revision( $post_id ) ) {
+        return;
+    }
+    if ( ! current_user_can( 'edit_post', $post_id ) ) {
+        return;
+    }
+    if ( isset( $_POST['ir_event_ticket_field'] ) ) {
+        update_post_meta( $post_id, '_ir_event_ticket_field', sanitize_text_field( $_POST['ir_event_ticket_field'] ) );
+    } else {
+        delete_post_meta( $post_id, '_ir_event_ticket_field' );
+    }
+}
+add_action( 'save_post', 'save_ir_event_ticket_field_data' );
 
 /**
  * Parsing WPGetAPI for various endpoints
