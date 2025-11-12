@@ -269,7 +269,7 @@ if ( ! function_exists( 'hello_elementor_body_open' ) ) {
 }
 
 /**
- * Custom post type for events
+ * Custom post types
  */
 function create_event_post_type() {
 	register_post_type('ir_event_post',
@@ -288,8 +288,25 @@ function create_event_post_type() {
 }
 add_action( 'init', 'create_event_post_type' );
 
+function create_release_post_type() {
+	register_post_type('ir_release_post',
+		array(
+			'public' => true,
+        	'labels' => array(
+            	'name' => esc_html__( 'IR Releases', 'textdomain' ),
+            	'all_items' => esc_html__( 'All IR Releases', 'textdomain' ),
+            	'singular_name' => esc_html__( 'IR Release', 'textdomain' )
+        	),
+			'has_archive' => true,
+            'rewrite' => array('slug' => 'shows'),
+            'supports' => array('title', 'editor', 'thumbnail', "custom-fields")
+		)
+	);
+}
+add_action( 'init', 'create_release_post_type' );
+
 /**
- * Event Date Meta Box
+ * Custom Post Meta Boxes
  */
 function ir_event_date_box() {
     add_meta_box(
@@ -303,20 +320,172 @@ function ir_event_date_box() {
 }
 add_action( 'add_meta_boxes', 'ir_event_date_box' );
 
+function ir_event_city_box() {
+    add_meta_box(
+        'ir_event_city', 
+        'Event City',
+        'ir_event_city_callback',
+        'ir_event_post',
+        'normal',
+        'high'
+    );
+}
+add_action( 'add_meta_boxes', 'ir_event_city_box' );
+
+function ir_event_venue_box() {
+    add_meta_box(
+        'ir_event_venue', 
+        'Event Venue',
+        'ir_event_venue_callback',
+        'ir_event_post',
+        'normal',
+        'high'
+    );
+}
+add_action( 'add_meta_boxes', 'ir_event_venue_box' );
+
+function ir_event_ticket_box() {
+    add_meta_box(
+        'ir_event_ticket', 
+        'Event Ticket',
+        'ir_event_ticket_callback',
+        'ir_event_post',
+        'normal',
+        'high'
+    );
+}
+add_action( 'add_meta_boxes', 'ir_event_ticket_box' );
+
+function ir_release_artist_box() {
+    add_meta_box(
+        'ir_release_artist', 
+        'Release Artist',
+        'ir_release_artist_callback',
+        'ir_release_post',
+        'normal',
+        'high'
+    );
+}
+add_action( 'add_meta_boxes', 'ir_release_artist_box' );
+
+function ir_release_genre_box() {
+    add_meta_box(
+        'ir_release_genre', 
+        'Release Genre',
+        'ir_release_genre_callback',
+        'ir_release_post',
+        'normal',
+        'high'
+    );
+}
+add_action( 'add_meta_boxes', 'ir_release_genre_box' );
+
+function ir_release_presslink_box() {
+    add_meta_box(
+        'ir_release_presslink', 
+        'Release Press',
+        'ir_release_presslink_callback',
+        'ir_release_post',
+        'normal',
+        'high'
+    );
+}
+add_action( 'add_meta_boxes', 'ir_release_presslink_box' );
+
+function ir_release_show_box() {
+    add_meta_box(
+        'ir_release_show', 
+        'Release Show',
+        'ir_release_show_callback',
+        'ir_release_post',
+        'normal',
+        'high'
+    );
+}
+add_action( 'add_meta_boxes', 'ir_release_show_box' );
+
+function ir_release_streaming_box() {
+    add_meta_box(
+        'ir_release_streaming', 
+        'Release Streaming',
+        'ir_release_streaming_callback',
+        'ir_release_post',
+        'normal',
+        'high'
+    );
+}
+add_action( 'add_meta_boxes', 'ir_release_streaming_box' );
+
+/**
+ * Custom Post Callbacks
+ */
 function ir_event_date_callback( $post ) {
-    // Add a nonce field for security
     wp_nonce_field( basename( __FILE__ ), 'ir_event_date_nonce' );
-
-    // Retrieve existing meta value (if any)
     $my_meta_value = get_post_meta( $post->ID, '_ir_event_date_field', true );
-
-    // Output the field
     echo '<label for="ir_event_date_field">Event Date: </label>';
     echo '<input type="date" id="ir_event_date_field" name="ir_event_date_field" value="' . esc_attr( $my_meta_value ) . '" size="25" />';
 }
 
+function ir_event_city_callback( $post ) {
+    wp_nonce_field( basename( __FILE__ ), 'ir_event_city_nonce' );
+    $my_meta_value = get_post_meta( $post->ID, '_ir_event_city_field', true );
+    echo '<label for="ir_event_city_field">Event City: </label>';
+    echo '<input type="text" id="ir_event_city_field" name="ir_event_city_field" value="' . esc_attr( $my_meta_value ) . '" size="25" />';
+}
+
+function ir_event_venue_callback( $post ) {
+    wp_nonce_field( basename( __FILE__ ), 'ir_event_venue_nonce' );
+    $my_meta_value = get_post_meta( $post->ID, '_ir_event_venue_field', true );
+    echo '<label for="ir_event_venue_field">Event Venue: </label>';
+    echo '<input type="text" id="ir_event_venue_field" name="ir_event_venue_field" value="' . esc_attr( $my_meta_value ) . '" size="25" />';
+}
+
+function ir_event_ticket_callback( $post ) {
+    wp_nonce_field( basename( __FILE__ ), 'ir_event_ticket_nonce' );
+    $my_meta_value = get_post_meta( $post->ID, '_ir_event_ticket_field', true );
+    echo '<label for="ir_event_ticket_field">Event Ticket: </label>';
+    echo '<input type="url" id="ir_event_ticket_field" name="ir_event_ticket_field" value="' . esc_attr( $my_meta_value ) . '" size="25" />';
+}
+
+function ir_release_artist_callback( $post ) {
+    wp_nonce_field( basename( __FILE__ ), 'ir_release_artist_nonce' );
+    $my_meta_value = get_post_meta( $post->ID, '_ir_release_artist_field', true );
+    echo '<label for="ir_release_artist_field">Artist: </label>';
+    echo '<input type="text" id="ir_release_artist_field" name="ir_release_artist_field" value="' . esc_attr( $my_meta_value ) . '" size="25" />';
+}
+
+function ir_release_genre_callback( $post ) {
+    wp_nonce_field( basename( __FILE__ ), 'ir_release_genre_nonce' );
+    $my_meta_value = get_post_meta( $post->ID, '_ir_release_genre_field', true );
+    echo '<label for="ir_release_genre_field">Genre: </label>';
+    echo '<input type="text" id="ir_release_genre_field" name="ir_release_genre_field" value="' . esc_attr( $my_meta_value ) . '" size="25" />';
+}
+
+function ir_release_presslink_callback( $post ) {
+    wp_nonce_field( basename( __FILE__ ), 'ir_release_presslink_nonce' );
+    $my_meta_value = get_post_meta( $post->ID, '_ir_release_presslink_field', true );
+    echo '<label for="ir_release_presslink_field">Press Link: </label>';
+    echo '<input type="url" id="ir_release_presslink_field" name="ir_release_presslink_field" value="' . esc_attr( $my_meta_value ) . '" size="25" />';
+}
+
+function ir_release_show_callback( $post ) {
+    wp_nonce_field( basename( __FILE__ ), 'ir_release_show_nonce' );
+    $my_meta_value = get_post_meta( $post->ID, '_ir_release_show_field', true );
+    echo '<label for="ir_release_show_field">Show Link: </label>';
+    echo '<input type="url" id="ir_release_show_field" name="ir_release_show_field" value="' . esc_attr( $my_meta_value ) . '" size="25" />';
+}
+
+function ir_release_streaming_callback( $post ) {
+    wp_nonce_field( basename( __FILE__ ), 'ir_release_streaming_nonce' );
+    $my_meta_value = get_post_meta( $post->ID, '_ir_release_streaming_field', true );
+    echo '<label for="ir_release_streaming_field">Streaming Link: </label>';
+    echo '<input type="url" id="ir_release_streaming_field" name="ir_release_streaming_field" value="' . esc_attr( $my_meta_value ) . '" size="25" />';
+}
+
+/**
+ * Custom Post Save Actions
+ */
 function save_ir_event_date_field_data( $post_id ) {
-    // Verify nonce for security
     if ( ! isset( $_POST['ir_event_date_nonce'] ) || ! wp_verify_nonce( $_POST['ir_event_date_nonce'], basename( __FILE__ ) ) ) {
         return;
     }
@@ -337,35 +506,7 @@ function save_ir_event_date_field_data( $post_id ) {
 }
 add_action( 'save_post', 'save_ir_event_date_field_data' );
 
-/**
- * Event City Meta Box
- */
-function ir_event_city_box() {
-    add_meta_box(
-        'ir_event_city', 
-        'Event City',
-        'ir_event_city_callback',
-        'ir_event_post',
-        'normal',
-        'high'
-    );
-}
-add_action( 'add_meta_boxes', 'ir_event_city_box' );
-
-function ir_event_city_callback( $post ) {
-    // Add a nonce field for security
-    wp_nonce_field( basename( __FILE__ ), 'ir_event_city_nonce' );
-
-    // Retrieve existing meta value (if any)
-    $my_meta_value = get_post_meta( $post->ID, '_ir_event_city_field', true );
-
-    // Output the field
-    echo '<label for="ir_event_city_field">Event City: </label>';
-    echo '<input type="text" id="ir_event_city_field" name="ir_event_city_field" value="' . esc_attr( $my_meta_value ) . '" size="25" />';
-}
-
 function save_ir_event_city_field_data( $post_id ) {
-    // Verify nonce for security
     if ( ! isset( $_POST['ir_event_city_nonce'] ) || ! wp_verify_nonce( $_POST['ir_event_city_nonce'], basename( __FILE__ ) ) ) {
         return;
     }
@@ -386,35 +527,7 @@ function save_ir_event_city_field_data( $post_id ) {
 }
 add_action( 'save_post', 'save_ir_event_city_field_data' );
 
-/**
- * Event Venue Meta Box
- */
-function ir_event_venue_box() {
-    add_meta_box(
-        'ir_event_venue', 
-        'Event Venue',
-        'ir_event_venue_callback',
-        'ir_event_post',
-        'normal',
-        'high'
-    );
-}
-add_action( 'add_meta_boxes', 'ir_event_venue_box' );
-
-function ir_event_venue_callback( $post ) {
-    // Add a nonce field for security
-    wp_nonce_field( basename( __FILE__ ), 'ir_event_venue_nonce' );
-
-    // Retrieve existing meta value (if any)
-    $my_meta_value = get_post_meta( $post->ID, '_ir_event_venue_field', true );
-
-    // Output the field
-    echo '<label for="ir_event_venue_field">Event Venue: </label>';
-    echo '<input type="text" id="ir_event_venue_field" name="ir_event_venue_field" value="' . esc_attr( $my_meta_value ) . '" size="25" />';
-}
-
 function save_ir_event_venue_field_data( $post_id ) {
-    // Verify nonce for security
     if ( ! isset( $_POST['ir_event_venue_nonce'] ) || ! wp_verify_nonce( $_POST['ir_event_venue_nonce'], basename( __FILE__ ) ) ) {
         return;
     }
@@ -435,36 +548,7 @@ function save_ir_event_venue_field_data( $post_id ) {
 }
 add_action( 'save_post', 'save_ir_event_venue_field_data' );
 
-
-/**
- * Event Ticket Link Meta Box
- */
-function ir_event_ticket_box() {
-    add_meta_box(
-        'ir_event_ticket', 
-        'Event Ticket',
-        'ir_event_ticket_callback',
-        'ir_event_post',
-        'normal',
-        'high'
-    );
-}
-add_action( 'add_meta_boxes', 'ir_event_ticket_box' );
-
-function ir_event_ticket_callback( $post ) {
-    // Add a nonce field for security
-    wp_nonce_field( basename( __FILE__ ), 'ir_event_ticket_nonce' );
-
-    // Retrieve existing meta value (if any)
-    $my_meta_value = get_post_meta( $post->ID, '_ir_event_ticket_field', true );
-
-    // Output the field
-    echo '<label for="ir_event_ticket_field">Event Ticket: </label>';
-    echo '<input type="url" id="ir_event_ticket_field" name="ir_event_ticket_field" value="' . esc_attr( $my_meta_value ) . '" size="25" />';
-}
-
 function save_ir_event_ticket_field_data( $post_id ) {
-    // Verify nonce for security
     if ( ! isset( $_POST['ir_event_ticket_nonce'] ) || ! wp_verify_nonce( $_POST['ir_event_ticket_nonce'], basename( __FILE__ ) ) ) {
         return;
     }
@@ -485,32 +569,110 @@ function save_ir_event_ticket_field_data( $post_id ) {
 }
 add_action( 'save_post', 'save_ir_event_ticket_field_data' );
 
-/**
- * Parsing WPGetAPI for various endpoints
- */
-
-/**
- * Ticketmaster Events
- */
-function ticketmaster_parser() {
-    $api_data = wpgetapi_endpoint( 'ticketmaster', 'ticketmaster_events' );
-	$parsed_data = json_decode($api_data)->_embedded->events;
-	
-	$output = '<div>';
-	
-	if (isset($parsed_data) && is_array($parsed_data)) {
-		foreach ($parsed_data as $item) {
-        	$output .= '<p>'. $item->name . '<div>' . '<img src="' . $item->images[3]->url . '">' . '</div>' . '</p>';
-    	}
-	} else {
-		$output .= '<p> There was an error retrieving events.</p>';
-	}
-	
-	$output .= '</div>';
-
-   return $output;
+function save_ir_release_artist_field_data( $post_id ) {
+    if ( ! isset( $_POST['ir_release_artist_nonce'] ) || ! wp_verify_nonce( $_POST['ir_release_artist_nonce'], basename( __FILE__ ) ) ) {
+        return;
+    }
+    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+        return;
+    }
+    if ( wp_is_post_revision( $post_id ) ) {
+        return;
+    }
+    if ( ! current_user_can( 'edit_post', $post_id ) ) {
+        return;
+    }
+    if ( isset( $_POST['ir_release_artist_field'] ) ) {
+        update_post_meta( $post_id, '_ir_release_artist_field', sanitize_text_field( $_POST['ir_release_artist_field'] ) );
+    } else {
+        delete_post_meta( $post_id, '_ir_release_artist_field' );
+    }
 }
-add_shortcode( 'ticketmaster_events_formatted', 'ticketmaster_parser' );
+add_action( 'save_post', 'save_ir_release_artist_field_data' );
+
+function save_ir_release_genre_field_data( $post_id ) {
+    if ( ! isset( $_POST['ir_release_genre_nonce'] ) || ! wp_verify_nonce( $_POST['ir_release_genre_nonce'], basename( __FILE__ ) ) ) {
+        return;
+    }
+    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+        return;
+    }
+    if ( wp_is_post_revision( $post_id ) ) {
+        return;
+    }
+    if ( ! current_user_can( 'edit_post', $post_id ) ) {
+        return;
+    }
+    if ( isset( $_POST['ir_release_genre_field'] ) ) {
+        update_post_meta( $post_id, '_ir_release_genre_field', sanitize_text_field( $_POST['ir_release_genre_field'] ) );
+    } else {
+        delete_post_meta( $post_id, '_ir_release_genre_field' );
+    }
+}
+add_action( 'save_post', 'save_ir_release_genre_field_data' );
+
+function save_ir_release_presslink_field_data( $post_id ) {
+    if ( ! isset( $_POST['ir_release_presslink_nonce'] ) || ! wp_verify_nonce( $_POST['ir_release_presslink_nonce'], basename( __FILE__ ) ) ) {
+        return;
+    }
+    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+        return;
+    }
+    if ( wp_is_post_revision( $post_id ) ) {
+        return;
+    }
+    if ( ! current_user_can( 'edit_post', $post_id ) ) {
+        return;
+    }
+    if ( isset( $_POST['ir_release_presslink_field'] ) ) {
+        update_post_meta( $post_id, '_ir_release_presslink_field', sanitize_text_field( $_POST['ir_release_presslink_field'] ) );
+    } else {
+        delete_post_meta( $post_id, '_ir_release_presslink_field' );
+    }
+}
+add_action( 'save_post', 'save_ir_release_presslink_field_data' );
+
+function save_ir_release_show_field_data( $post_id ) {
+    if ( ! isset( $_POST['ir_release_show_nonce'] ) || ! wp_verify_nonce( $_POST['ir_release_show_nonce'], basename( __FILE__ ) ) ) {
+        return;
+    }
+    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+        return;
+    }
+    if ( wp_is_post_revision( $post_id ) ) {
+        return;
+    }
+    if ( ! current_user_can( 'edit_post', $post_id ) ) {
+        return;
+    }
+    if ( isset( $_POST['ir_release_show_field'] ) ) {
+        update_post_meta( $post_id, '_ir_release_show_field', sanitize_text_field( $_POST['ir_release_show_field'] ) );
+    } else {
+        delete_post_meta( $post_id, '_ir_release_show_field' );
+    }
+}
+add_action( 'save_post', 'save_ir_release_show_field_data' );
+
+function save_ir_release_streaming_field_data( $post_id ) {
+    if ( ! isset( $_POST['ir_release_streaming_nonce'] ) || ! wp_verify_nonce( $_POST['ir_release_streaming_nonce'], basename( __FILE__ ) ) ) {
+        return;
+    }
+    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+        return;
+    }
+    if ( wp_is_post_revision( $post_id ) ) {
+        return;
+    }
+    if ( ! current_user_can( 'edit_post', $post_id ) ) {
+        return;
+    }
+    if ( isset( $_POST['ir_release_streaming_field'] ) ) {
+        update_post_meta( $post_id, '_ir_release_streaming_field', sanitize_text_field( $_POST['ir_release_streaming_field'] ) );
+    } else {
+        delete_post_meta( $post_id, '_ir_release_streaming_field' );
+    }
+}
+add_action( 'save_post', 'save_ir_release_streaming_field_data' );
 
 require HELLO_THEME_PATH . '/theme.php';
 
