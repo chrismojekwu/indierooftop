@@ -298,7 +298,7 @@ function create_release_post_type() {
             	'singular_name' => esc_html__( 'IR Release', 'textdomain' )
         	),
 			'has_archive' => true,
-            'rewrite' => array('slug' => 'shows'),
+            'rewrite' => array('slug' => 'releases'),
             'supports' => array('title', 'editor', 'thumbnail', "custom-fields")
 		)
 	);
@@ -673,6 +673,145 @@ function save_ir_release_streaming_field_data( $post_id ) {
     }
 }
 add_action( 'save_post', 'save_ir_release_streaming_field_data' );
+
+/**
+function register_music_id_meta_field() {
+    register_meta( 'ir_release_post', 'external_id', array(
+        'show_in_rest' => true,
+        'single' => true,
+        'type' => 'string',
+        'sanitize_callback' => 'sanitize_text_field',
+        'auth_callback' => function() {
+            return current_user_can( 'edit_posts' );
+        }
+    ) );
+}
+add_action( 'rest_api_init', 'register_music_id_meta_field' );
+*/
+/**
+ * Release API Calls & Cron setup
+ */
+
+function authenticate_and_get_shopify_search() {
+	$response = wp_remote_post( 'https://accounts.spotify.com/api/token', array(
+		'method'      => 'POST',
+    	'headers'     => array(
+        	'Content-Type' => 'application/x-www-form-urlencoded',
+    	),
+    	'body'        => array(
+        	'grant_type'    => 'client_credentials',
+        	'client_id'     => '013b2c010a6d40d1b3973903e7343291',
+        	'client_secret' => '48c8e5c828c14e8793e060655c2cb798',
+        	'redirect_uri'  => 'https://indierooftop.com/',
+    	),
+    	'timeout'     => 30, 
+    	'sslverify'   => true,
+	) );
+	
+	if ( is_wp_error( $response ) ) {
+    	$error_message = $response->get_error_message();
+    	error_log( "Token request failed: $error_message" );
+	} else {
+    	$body = wp_remote_retrieve_body( $response );
+    	$data = json_decode( $body );
+
+    	if ( isset( $data->access_token ) ) {
+        	$access_token = $data->access_token;
+			$music_queries = ['https://api.spotify.com/v1/search?q=independent%20year:2025%20genre:r%26b&type=track', 'https://api.spotify.com/v1/search?q=independent%20year:2025%20genre:dance&type=track', 'https://api.spotify.com/v1/search?q=independent%20year:2025%20genre:hiphop&type=track'];
+        	// Use the access token
+        	foreach ($music_queries as $query) {
+				$music_response = wp_remote_get($query,  array(
+					'method'      => 'GET',
+    				'headers'     => array(
+        				'Authorization' => 'Bearer ' . $access_token,
+    				)
+				) );
+				
+				$music_genre = "";
+				
+				if ($query == $music_queries[0]) {
+					$music_genre = "R&B";
+				} elseif ($query == $music_queries[1]) {
+					$music_genre = "Dance";
+				} elseif ($query == $music_queries[2]) {
+					$music_genre = "Hip Hop";
+				}
+				
+				if ( is_wp_error( $music_response ) ) {
+        			return 'Error: ' . $music_response->get_error_message();
+    			}
+
+    			$body = wp_remote_retrieve_body( $music_response );
+    			$data = json_decode( $body );
+				
+				if ( isset( $data->tracks ) && isset( $data->tracks->items ) ) {
+        			$music_items = $data->tracks->items;
+					foreach ( $music_items as $music_item ) {
+						error_log( "Music: " . $music_item->album->name  );
+						/*
+						$existing_post = get_posts( array(
+            				'post_type'  => 'ir_release_post',
+            				'meta_key'   => 'external_id',
+            				'meta_value' => $music_item->album->id, 
+            				'fields'     => 'ids',
+        				) );*/
+						
+						$post_id = $music_item->album->id;
+						/*
+        				if ( ! empty( $existing_post ) ) {
+            				$post_id = $existing_post[0]; 
+        				}*/
+						
+						$post_args = array(
+            				'post_title'   => sanitize_text_field( $music_item->album->name ), // Map API 'name' to post title
+            				'post_content' => wp_kses_post( $music_item->album->name . " " . $music_item->album->artists[0]->name  ), // Map API 'description' to post content
+            				'post_status'  => 'publish',
+            				'post_type'    => 'ir_release_post',
+        				);
+						
+						if ( $post_id ) {
+            				$post_args['ID'] = $post_id;
+            				wp_update_post( $post_args );
+        				} else {
+            				$post_id = wp_insert_post( $post_args );
+        				}
+						
+						if ( $post_id && ! is_wp_error( $post_id ) ) {
+            				// Update custom fields
+            				update_post_meta( $post_id, 'external_id', $music_item->album->id );
+            				update_post_meta( $post_id, '_ir_release_artist_field', $music_item->album->artists[0]->name ); // Map other API fields to custom fields
+            				update_post_meta( $post_id, '_ir_release_genre_field', $music_genre );
+							update_post_meta( $post_id, '_ir_release_streaming_field', $music_item->album->external_urls->spotify );
+        				}
+					}
+    			}
+			}
+        	error_log( "Access Token: " . $access_token );
+			$api_url = 'https://api.spotify.com/v1/search';
+			
+    	} else {
+        	error_log( "Token response did not contain an access token: " . $body );
+    	}
+	}
+}
+add_action( 'admin_init', 'authenticate_and_get_shopify_search' );
+
+function release_cron_schedule( $schedules ) {
+	$schedules['every_hour'] = array(
+    	'interval' => 3600, // 5 minutes in seconds
+        'display'  => __( 'Every Hour' )
+    );
+    return $schedules;
+}
+add_filter( 'cron_schedules', 'release_cron_schedule' );
+
+if ( ! wp_next_scheduled( 'my_custom_event_hook' ) ) {
+	wp_schedule_event( time(), 'every_hour', 'release_event_hook' );
+}
+
+add_action( 'release_event_hook', 'authenticate_and_get_shopify_search' );
+
+
 
 require HELLO_THEME_PATH . '/theme.php';
 
