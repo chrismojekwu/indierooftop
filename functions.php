@@ -674,7 +674,7 @@ function save_ir_release_streaming_field_data( $post_id ) {
 }
 add_action( 'save_post', 'save_ir_release_streaming_field_data' );
 
-/**
+
 function register_music_id_meta_field() {
     register_meta( 'ir_release_post', 'external_id', array(
         'show_in_rest' => true,
@@ -687,10 +687,24 @@ function register_music_id_meta_field() {
     ) );
 }
 add_action( 'rest_api_init', 'register_music_id_meta_field' );
-*/
+
 /**
  * Release API Calls & Cron setup
  */
+
+function set_featured_image_from_url($post_id, $image_url, $image_description = 'Featured Image') {
+    require_once(ABSPATH . 'wp-admin/includes/media.php');
+    require_once(ABSPATH . 'wp-admin/includes/file.php');
+    require_once(ABSPATH . 'wp-admin/includes/image.php');
+	
+    $image_id = media_sideload_image($image_url, $post_id, $image_description, 'id');
+
+    if (!is_wp_error($image_id)) {
+        set_post_thumbnail($post_id, $image_id);
+    } else {
+        error_log('Failed to sideload image: ' . $image_id->get_error_message());
+    }
+}
 
 function authenticate_and_get_shopify_search() {
 	$response = wp_remote_post( 'https://accounts.spotify.com/api/token', array(
@@ -719,6 +733,10 @@ function authenticate_and_get_shopify_search() {
         	$access_token = $data->access_token;
 			$music_queries = ['https://api.spotify.com/v1/search?q=independent%20year:2025%20genre:r%26b&type=track', 'https://api.spotify.com/v1/search?q=independent%20year:2025%20genre:dance&type=track', 'https://api.spotify.com/v1/search?q=independent%20year:2025%20genre:hiphop&type=track'];
         	// Use the access token
+        	// 
+        	// 
+        	$synced_ids = array();
+			
         	foreach ($music_queries as $query) {
 				$music_response = wp_remote_get($query,  array(
 					'method'      => 'GET',
@@ -744,37 +762,61 @@ function authenticate_and_get_shopify_search() {
     			$body = wp_remote_retrieve_body( $music_response );
     			$data = json_decode( $body );
 				
+				error_log( "Next Link: " . $data->tracks->next  );
+				
 				if ( isset( $data->tracks ) && isset( $data->tracks->items ) ) {
         			$music_items = $data->tracks->items;
 					foreach ( $music_items as $music_item ) {
-						error_log( "Music: " . $music_item->album->name  );
-						/*
+						
 						$existing_post = get_posts( array(
             				'post_type'  => 'ir_release_post',
             				'meta_key'   => 'external_id',
             				'meta_value' => $music_item->album->id, 
             				'fields'     => 'ids',
-        				) );*/
+        				) );
+						
+						error_log( "check for existing post: " . $existing_post[0] );
+						error_log( "check image url: " . $music_item->album->images[0]->url );
+						error_log( "check api id: " . $post_id = $music_item->album->id );
 						
 						$post_id = $music_item->album->id;
-						/*
+						
         				if ( ! empty( $existing_post ) ) {
             				$post_id = $existing_post[0]; 
-        				}*/
+							wp_update_post( array(
+                				'ID'           => $post_id,
+                				'post_title'   => sanitize_text_field( $music_item->album->name ), // Map API 'name' to post title
+            					'post_content' => wp_kses_post( $music_item->album->name . " " . $music_item->album->artists[0]->name  ), // Map API 'description' to post content
+            					'post_status'  => 'publish',
+            					'post_type'    => 'ir_release_post',
+            				) );
+							$synced_ids[] = $music_item->album->id;
+        				} else {
+							$post_args = array(
+            					'post_title'   => sanitize_text_field( $music_item->album->name ), // Map API 'name' to post title
+            					'post_content' => wp_kses_post( $music_item->album->name . " " . $music_item->album->artists[0]->name  ), // Map API 'description' to post content
+            					'post_status'  => 'publish',
+            					'post_type'    => 'ir_release_post',
+        					);
+							$post_id = wp_insert_post( $post_args );
+							if ( ! is_wp_error( $post_id ) ) {
+                				update_post_meta( $post_id, 'external_id', $music_item->album->id ); // Store the API ID
+								$synced_ids[] = $music_item->album->id;
+            				}
+						}
 						
-						$post_args = array(
-            				'post_title'   => sanitize_text_field( $music_item->album->name ), // Map API 'name' to post title
-            				'post_content' => wp_kses_post( $music_item->album->name . " " . $music_item->album->artists[0]->name  ), // Map API 'description' to post content
-            				'post_status'  => 'publish',
-            				'post_type'    => 'ir_release_post',
-        				);
 						
+						
+						/*
 						if ( $post_id ) {
             				$post_args['ID'] = $post_id;
             				wp_update_post( $post_args );
         				} else {
             				$post_id = wp_insert_post( $post_args );
-        				}
+        				}*/
+						
+						# ORIGINAL WORKING INSERT POST
+						//$post_id = wp_insert_post( $post_args );
 						
 						if ( $post_id && ! is_wp_error( $post_id ) ) {
             				// Update custom fields
@@ -782,10 +824,27 @@ function authenticate_and_get_shopify_search() {
             				update_post_meta( $post_id, '_ir_release_artist_field', $music_item->album->artists[0]->name ); // Map other API fields to custom fields
             				update_post_meta( $post_id, '_ir_release_genre_field', $music_genre );
 							update_post_meta( $post_id, '_ir_release_streaming_field', $music_item->album->external_urls->spotify );
+							set_featured_image_from_url($post_id, $music_item->album->images[0]->url);
         				}
 					}
     			}
 			}
+			
+			$all_synced_posts = get_posts( array(
+        		'post_type'  => 'ir_release_post',
+        		'meta_key'   => 'external_id',
+        		'posts_per_page' => -1,
+        		'fields' => 'ids',
+    		) );
+			
+			foreach ( $all_synced_posts as $post_id ) {
+        		$api_id = get_post_meta( $post_id, 'external_id', true );
+        		if ( ! in_array( $api_id, $synced_ids ) ) {
+            		wp_delete_post( $post_id, true ); // Delete the post permanently
+        		}
+    		}
+			
+			
         	error_log( "Access Token: " . $access_token );
 			$api_url = 'https://api.spotify.com/v1/search';
 			
@@ -797,21 +856,41 @@ function authenticate_and_get_shopify_search() {
 add_action( 'admin_init', 'authenticate_and_get_shopify_search' );
 
 function release_cron_schedule( $schedules ) {
-	$schedules['every_hour'] = array(
-    	'interval' => 3600, // 5 minutes in seconds
-        'display'  => __( 'Every Hour' )
+	$schedules['every_twelve_hours'] = array(
+    	'interval' => 43200, 
+        'display'  => __( 'Every Twelve Hours' )
     );
     return $schedules;
 }
-add_filter( 'cron_schedules', 'release_cron_schedule' );
+//add_filter( 'cron_schedules', 'release_cron_schedule' );
 
 if ( ! wp_next_scheduled( 'my_custom_event_hook' ) ) {
-	wp_schedule_event( time(), 'every_hour', 'release_event_hook' );
+	wp_schedule_event( time(), 'every_twelve_hours', 'release_event_hook' );
 }
 
-add_action( 'release_event_hook', 'authenticate_and_get_shopify_search' );
+//add_action( 'release_event_hook', 'authenticate_and_get_shopify_search' );
 
+function move_release_posts_to_trash() {
+    $post_type = 'ir_release_post'; // Replace with your custom post type slug
+    $args = array(
+        'post_type'      => $post_type,
+        'posts_per_page' => -1, // Retrieve all posts
+        'fields'         => 'ids', // Retrieve only post IDs
+        'post_status'    => 'publish', // Or 'any' to include drafts, etc.
+    );
+    $posts = get_posts($args);
 
+    if ($posts) {
+        foreach ($posts as $post_id) {
+            wp_trash_post($post_id); // Move to trash
+        }
+        //echo "All posts of '$post_type' moved to trash.";
+    } else {
+       // echo "No posts found for '$post_type'.";
+    }
+}
+
+//add_action('init', 'move_release_posts_to_trash');
 
 require HELLO_THEME_PATH . '/theme.php';
 
